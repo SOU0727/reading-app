@@ -19,6 +19,7 @@
     button {
       padding: 8px 16px;
       cursor: pointer;
+      margin-right: 8px;
     }
     .book-item {
       border: 1px solid #ccc;
@@ -26,42 +27,136 @@
       padding: 12px;
       margin-bottom: 10px;
     }
+    #authBox, #appBox {
+      display: none;
+    }
+    #userInfo {
+      margin-bottom: 20px;
+      color: #555;
+    }
   </style>
 </head>
 <body>
+
   <h1>📚 読書記録アプリ</h1>
 
-  <label>本のタイトル</label>
-  <input type="text" id="title" placeholder="例:吾輩は猫である">
+  <!-- ログイン画面 -->
+  <div id="authBox">
+    <label>メールアドレス</label>
+    <input type="email" id="email" placeholder="例:you@example.com">
 
-  <label>感想</label>
-  <textarea id="memo" rows="4" placeholder="読んだ感想を書いてみましょう"></textarea>
+    <label>パスワード(6文字以上)</label>
+    <input type="password" id="password" placeholder="パスワード">
 
-  <button onclick="addBook()">記録する</button>
+    <button onclick="signup()">新規登録</button>
+    <button onclick="login()">ログイン</button>
+    <p id="authError" style="color:red;"></p>
+  </div>
 
-  <h2>これまでの記録</h2>
-  <div id="bookList"></div>
+  <!-- アプリ本体(ログイン後に表示) -->
+  <div id="appBox">
+    <div id="userInfo">
+      <span id="userEmail"></span>
+      <button onclick="logout()">ログアウト</button>
+    </div>
+
+    <label>本のタイトル</label>
+    <input type="text" id="title" placeholder="例:吾輩は猫である">
+
+    <label>感想</label>
+    <textarea id="memo" rows="4" placeholder="読んだ感想を書いてみましょう"></textarea>
+
+    <button onclick="addBook()">記録する</button>
+
+    <h2>これまでの記録</h2>
+    <div id="bookList"></div>
+  </div>
+
+  <!-- Firebase SDK(compat版:scriptタグでそのまま使える形式) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 
   <script>
-    // ページを開いたときに保存済みの記録を読み込む
-    let books = JSON.parse(localStorage.getItem('books')) || [];
+    // あなたのFirebase接続情報
+    const firebaseConfig = {
+      apiKey: "AIzaSyDEyFPaUegAoPHpAaB9z1bcbAf7fKQh8JU",
+      authDomain: "reading-app-5527c.firebaseapp.com",
+      projectId: "reading-app-5527c",
+      storageBucket: "reading-app-5527c.firebasestorage.app",
+      messagingSenderId: "778929617611",
+      appId: "1:778929617611:web:9d74f56b2e2244ea2b794e"
+    };
 
-    function renderBooks() {
-      const list = document.getElementById('bookList');
-      list.innerHTML = '';
-      books.forEach((book, index) => {
-        const item = document.createElement('div');
-        item.className = 'book-item';
-        item.innerHTML = `
-          <strong>${book.title}</strong>
-          <p>${book.memo}</p>
-          <button onclick="deleteBook(${index})">削除</button>
-        `;
-        list.appendChild(item);
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    let unsubscribeBooks = null;
+
+    // ログイン状態が変わったときに呼ばれる
+    auth.onAuthStateChanged(user => {
+      const authError = document.getElementById('authError');
+      authError.textContent = '';
+
+      if (user) {
+        // ログイン済み
+        document.getElementById('authBox').style.display = 'none';
+        document.getElementById('appBox').style.display = 'block';
+        document.getElementById('userEmail').textContent = user.email;
+        watchBooks(user.uid);
+      } else {
+        // 未ログイン
+        document.getElementById('authBox').style.display = 'block';
+        document.getElementById('appBox').style.display = 'none';
+        if (unsubscribeBooks) unsubscribeBooks();
+      }
+    });
+
+    function signup() {
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      auth.createUserWithEmailAndPassword(email, password)
+        .catch(err => {
+          document.getElementById('authError').textContent = err.message;
+        });
+    }
+
+    function login() {
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      auth.signInWithEmailAndPassword(email, password)
+        .catch(err => {
+          document.getElementById('authError').textContent = err.message;
+        });
+    }
+
+    function logout() {
+      auth.signOut();
+    }
+
+    // Firestoreの変更をリアルタイムで監視して画面に反映
+    function watchBooks(uid) {
+      const booksRef = db.collection('users').doc(uid).collection('books').orderBy('createdAt', 'desc');
+      unsubscribeBooks = booksRef.onSnapshot(snapshot => {
+        const list = document.getElementById('bookList');
+        list.innerHTML = '';
+        snapshot.forEach(doc => {
+          const book = doc.data();
+          const item = document.createElement('div');
+          item.className = 'book-item';
+          item.innerHTML = `
+            <strong>${book.title}</strong>
+            <p>${book.memo}</p>
+            <button onclick="deleteBook('${doc.id}')">削除</button>
+          `;
+          list.appendChild(item);
+        });
       });
     }
 
     function addBook() {
+      const user = auth.currentUser;
       const title = document.getElementById('title').value;
       const memo = document.getElementById('memo').value;
 
@@ -70,22 +165,20 @@
         return;
       }
 
-      books.unshift({ title, memo });
-      localStorage.setItem('books', JSON.stringify(books));
-      renderBooks();
+      db.collection('users').doc(user.uid).collection('books').add({
+        title: title,
+        memo: memo,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
 
       document.getElementById('title').value = '';
       document.getElementById('memo').value = '';
     }
 
-    function deleteBook(index) {
-      books.splice(index, 1);
-      localStorage.setItem('books', JSON.stringify(books));
-      renderBooks();
+    function deleteBook(bookId) {
+      const user = auth.currentUser;
+      db.collection('users').doc(user.uid).collection('books').doc(bookId).delete();
     }
-
-    // 最初に一度、保存済みの記録を画面に表示する
-    renderBooks();
   </script>
 </body>
 </html>
