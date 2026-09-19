@@ -34,7 +34,12 @@
 
     <div class="card" id="addCard">
       <label>本のタイトル</label>
-      <input type="text" id="title" placeholder="例:吾輩は猫である">
+      <div class="search-wrap">
+        <input type="text" id="title" placeholder="例:吾輩は猫である" oninput="onTitleInput()" autocomplete="off">
+        <div id="titleSuggestions" class="suggestions"></div>
+      </div>
+      <div id="selectedBookChip" class="selected-chip"></div>
+
       <label>評価</label>
       <div id="newRatingStars" class="star-row"></div>
       <label>感想</label>
@@ -46,16 +51,6 @@
       <h2>本棚</h2>
       <input type="text" id="searchBox" placeholder="タイトルや著者で検索" oninput="renderShelf()">
       <div id="bookGrid"></div>
-    </div>
-
-    <div id="pickerView">
-      <h2>表紙を選んでください</h2>
-      <p class="picker-subtitle" id="pickerSubtitle"></p>
-      <div id="candidateGrid"></div>
-      <div class="picker-actions">
-        <button class="secondary" onclick="registerWithoutCover()">表紙なしで登録する</button>
-        <button onclick="confirmCoverSelection()">この表紙で登録する</button>
-      </div>
     </div>
 
     <div id="detailView">
@@ -98,12 +93,11 @@
 
     let unsubscribeBooks = null;
     let booksCache = [];
-    let pendingBook = null;
-    let candidates = [];
-    let selectedCandidateIndex = 0;
     let newRating = 0;
     let editRating = 0;
     let currentDetailId = null;
+    let selectedBook = null;
+    let searchTimer = null;
 
     function starsHtml(rating, interactive, handlerName) {
       let html = '';
@@ -129,6 +123,12 @@
     function setEditRating(n) { editRating = n; renderEditRatingStars(); }
 
     renderNewRatingStars();
+
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.search-wrap')) {
+        document.getElementById('titleSuggestions').innerHTML = '';
+      }
+    });
 
     auth.onAuthStateChanged(user => {
       document.getElementById('authError').textContent = '';
@@ -162,30 +162,103 @@
       auth.signOut();
     }
 
-    async function fetchCoverCandidates(title) {
+    async function fetchBookSuggestions(query) {
       try {
-        const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(title)}&maxResults=10&key=${BOOKS_API_KEY}`);
+        const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=10&key=${BOOKS_API_KEY}`);
         const data = await res.json();
         const results = [];
-        const seenUrls = new Set();
+        const seenTitles = new Set();
         if (data.items) {
           for (const item of data.items) {
             const info = item.volumeInfo;
+            const key = info.title + '|' + (info.authors || []).join(',');
+            if (seenTitles.has(key)) continue;
+            seenTitles.add(key);
             const thumb = info.imageLinks && info.imageLinks.thumbnail;
-            if (thumb) {
-              const url = thumb.replace('http://', 'https://');
-              if (!seenUrls.has(url)) {
-                seenUrls.add(url);
-                results.push({ url, title: info.title || title, author: (info.authors || []).join('、') });
-              }
-            }
-            if (results.length >= 3) break;
+            results.push({
+              title: info.title || query,
+              author: (info.authors || []).join('、'),
+              url: thumb ? thumb.replace('http://', 'https://') : ''
+            });
+            if (results.length >= 5) break;
           }
         }
         return results;
       } catch (e) {
-        console.error('表紙候補の取得に失敗しました', e);
+        console.error('検索に失敗しました', e);
         return [];
+      }
+    }
+
+    function onTitleInput() {
+      selectedBook = null;
+      updateSelectedChip();
+      const query = document.getElementById('title').value.trim();
+      clearTimeout(searchTimer);
+      const box = document.getElementById('titleSuggestions');
+
+      if (query.length < 2) {
+        box.innerHTML = '';
+        return;
+      }
+
+      box.innerHTML = '<div class="suggestion-hint">検索中...</div>';
+      searchTimer = setTimeout(async () => {
+        const results = await fetchBookSuggestions(query);
+        renderSuggestions(results);
+      }, 400);
+    }
+
+    function renderSuggestions(results) {
+      const box = document.getElementById('titleSuggestions');
+      if (results.length === 0) {
+        box.innerHTML = '<div class="suggestion-hint">候補が見つかりませんでした</div>';
+        return;
+      }
+      box.innerHTML = '';
+      results.forEach(r => {
+        const item = document.createElement('div');
+        item.className = 'suggestion-item';
+        item.onclick = () => selectSuggestion(r);
+        const coverHtml = r.url
+          ? `<img class="suggestion-cover" src="${r.url}">`
+          : `<div class="suggestion-cover"></div>`;
+        item.innerHTML = `
+          ${coverHtml}
+          <div class="suggestion-text">
+            <div class="suggestion-title">${r.title}</div>
+            <div class="suggestion-author">${r.author || ''}</div>
+          </div>
+        `;
+        box.appendChild(item);
+      });
+    }
+
+    function selectSuggestion(r) {
+      selectedBook = r;
+      document.getElementById('title').value = r.title;
+      document.getElementById('titleSuggestions').innerHTML = '';
+      updateSelectedChip();
+    }
+
+    function clearSelectedBook() {
+      selectedBook = null;
+      updateSelectedChip();
+    }
+
+    function updateSelectedChip() {
+      const chip = document.getElementById('selectedBookChip');
+      if (selectedBook) {
+        chip.classList.add('active');
+        const coverHtml = selectedBook.url ? `<img src="${selectedBook.url}">` : '';
+        chip.innerHTML = `
+          ${coverHtml}
+          <div class="chip-text">${selectedBook.title}<div class="chip-author">${selectedBook.author || ''}</div></div>
+          <button type="button" class="secondary" onclick="clearSelectedBook()">変更</button>
+        `;
+      } else {
+        chip.classList.remove('active');
+        chip.innerHTML = '';
       }
     }
 
@@ -313,7 +386,7 @@
     }
 
     async function addBook() {
-      const title = document.getElementById('title').value;
+      const title = document.getElementById('title').value.trim();
       const memo = document.getElementById('memo').value;
 
       if (title === '') {
@@ -323,63 +396,15 @@
 
       const addButton = document.getElementById('addButton');
       addButton.disabled = true;
-      addButton.textContent = '表紙を検索中...';
+      addButton.textContent = '登録中...';
 
-      pendingBook = { title, memo, rating: newRating };
-      candidates = await fetchCoverCandidates(title);
+      const coverUrl = selectedBook ? selectedBook.url : '';
+      const author = selectedBook ? selectedBook.author : '';
+
+      await saveBook({ title, memo, rating: newRating }, coverUrl, author);
 
       addButton.disabled = false;
       addButton.textContent = '記録する';
-
-      if (candidates.length === 0) {
-        await saveBook(pendingBook, '', '');
-        resetForm();
-      } else {
-        openPicker();
-      }
-    }
-
-    function openPicker() {
-      selectedCandidateIndex = 0;
-      document.getElementById('pickerSubtitle').textContent = `「${pendingBook.title}」で見つかった候補`;
-      renderCandidates();
-
-      document.getElementById('addCard').style.display = 'none';
-      document.getElementById('shelfView').style.display = 'none';
-      document.getElementById('pickerView').style.display = 'block';
-      window.scrollTo(0, 0);
-    }
-
-    function renderCandidates() {
-      const grid = document.getElementById('candidateGrid');
-      grid.innerHTML = '';
-      candidates.forEach((c, i) => {
-        const el = document.createElement('div');
-        el.className = 'candidate-item' + (i === selectedCandidateIndex ? ' selected' : '');
-        el.onclick = () => { selectedCandidateIndex = i; renderCandidates(); };
-        el.innerHTML = `
-          <img class="candidate-cover" src="${c.url}" alt="候補${i + 1}">
-          <div class="candidate-author">${c.author || ''}</div>
-        `;
-        grid.appendChild(el);
-      });
-    }
-
-    async function confirmCoverSelection() {
-      const c = candidates[selectedCandidateIndex];
-      await saveBook(pendingBook, c.url, c.author);
-      closePicker();
-    }
-
-    async function registerWithoutCover() {
-      await saveBook(pendingBook, '', '');
-      closePicker();
-    }
-
-    function closePicker() {
-      document.getElementById('pickerView').style.display = 'none';
-      document.getElementById('addCard').style.display = 'block';
-      document.getElementById('shelfView').style.display = 'block';
       resetForm();
     }
 
@@ -400,6 +425,9 @@
       document.getElementById('memo').value = '';
       newRating = 0;
       renderNewRatingStars();
+      selectedBook = null;
+      updateSelectedChip();
+      document.getElementById('titleSuggestions').innerHTML = '';
     }
 
     function deleteBook(bookId) {
