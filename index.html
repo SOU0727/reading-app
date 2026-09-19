@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>読書記録アプリ</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      max-width: 500px;
+      margin: 40px auto;
+      padding: 0 20px;
+    }
+    input, textarea {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 12px;
+      box-sizing: border-box;
+    }
+    button {
+      padding: 8px 16px;
+      cursor: pointer;
+    }
+    .book-item {
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>📚 読書記録アプリ</h1>
+
+  <label>本のタイトル</label>
+  <input type="text" id="title" placeholder="例:吾輩は猫である">
+
+  <label>感想</label>
+  <textarea id="memo" rows="4" placeholder="読んだ感想を書いてみましょう"></textarea>
+
+  <button onclick="addBook()">記録する</button>
+
+  <h2>これまでの記録</h2>
+  <div id="bookList"></div>
+
+  <script>
+    // ページを開いたときに保存済みの記録を読み込む
+    let books = JSON.parse(localStorage.getItem('books')) || [];
+
+    function renderBooks() {
+      const list = document.getElementById('bookList');
+      list.innerHTML = '';
+      books.forEach((book, index) => {
+        const item = document.createElement('div');
+        item.className = 'book-item';
+        item.innerHTML = `
+          <strong>${book.title}</strong>
+          <p>${book.memo}</p>
+          <button onclick="deleteBook(${index})">削除</button>
+        `;
+        list.appendChild(item);
+      });
+    }
+
+    function addBook() {
+      const title = document.getElementById('title').value;
+      const memo = document.getElementById('memo').value;
+
+      if (title === '') {
+        alert('タイトルを入力してください');
+        return;
+      }
+
+      books.unshift({ title, memo });
+      localStorage.setItem('books', JSON.stringify(books));
+      renderBooks();
+
+      document.getElementById('title').value = '';
+      document.getElementById('memo').value = '';
+    }
+
+    function deleteBook(index) {
+      books.splice(index, 1);
+      localStorage.setItem('books', JSON.stringify(books));
+      renderBooks();
+    }
+
+    // 最初に一度、保存済みの記録を画面に表示する
+    renderBooks();
+  </script>
+</body>
+</html>
