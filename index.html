@@ -4,112 +4,222 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>読書記録アプリ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700&display=swap" rel="stylesheet">
   <style>
+    * { box-sizing: border-box; }
     body {
-      font-family: sans-serif;
-      max-width: 500px;
+      font-family: 'Zen Maru Gothic', sans-serif;
+      max-width: 600px;
       margin: 0 auto;
-      padding: 16px;
-      font-size: 16px;
+      padding: 24px 16px 60px;
+      background: linear-gradient(180deg, #fdf6ec 0%, #f5efe3 100%);
+      min-height: 100vh;
+      color: #4a3f35;
     }
-    h1 {
-      font-size: 1.5rem;
+    h1 { font-size: 1.6rem; text-align: center; margin-bottom: 4px; }
+    .subtitle { text-align: center; color: #a08c73; font-size: 0.85rem; margin-bottom: 24px; }
+    .card {
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 14px rgba(150, 120, 80, 0.12);
     }
-    label {
-      display: block;
-      margin-top: 12px;
-      font-weight: bold;
-    }
+    label { display: block; margin-top: 12px; margin-bottom: 4px; font-weight: 700; font-size: 0.9rem; color: #6b5a48; }
     input, textarea {
       width: 100%;
       padding: 12px;
-      margin-top: 6px;
-      margin-bottom: 6px;
-      box-sizing: border-box;
       font-size: 16px;
-      border: 1px solid #ccc;
-      border-radius: 6px;
+      font-family: inherit;
+      border: 1px solid #e3d9c9;
+      border-radius: 10px;
+      background: #fffaf3;
     }
+    input:focus, textarea:focus { outline: none; border-color: #e2a25a; }
     button {
       padding: 12px 20px;
       cursor: pointer;
       margin-right: 8px;
-      margin-top: 8px;
-      font-size: 16px;
+      margin-top: 14px;
+      font-size: 15px;
+      font-family: inherit;
+      font-weight: 700;
       border: none;
-      border-radius: 6px;
-      background-color: #4a7dff;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #f0a860, #e2824a);
       color: white;
+      box-shadow: 0 3px 8px rgba(226, 130, 74, 0.35);
     }
-    button:active {
-      background-color: #3a63d6;
-    }
-    .book-item {
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      padding: 12px;
-      margin-bottom: 10px;
-    }
-    .book-item button {
-      background-color: #e05555;
-      padding: 8px 14px;
-      font-size: 14px;
-    }
-    #authBox, #appBox {
-      display: none;
-    }
+    button:active { transform: translateY(1px); }
+    button:disabled { opacity: 0.6; cursor: default; }
+    button.secondary { background: #eee2d0; color: #6b5a48; box-shadow: none; }
+    button.danger { background: #f6e4e0; color: #b2543f; box-shadow: none; }
+    #authBox, #appBox { display: none; }
     #userInfo {
-      margin-bottom: 20px;
-      color: #555;
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 16px; padding: 10px 16px;
+      background: #fff3e2; border-radius: 12px; font-size: 0.85rem; color: #8a7458;
+    }
+    #userInfo button { margin: 0; padding: 6px 14px; font-size: 13px; }
+    h2 { font-size: 1.1rem; margin: 24px 0 12px; color: #6b5a48; }
+    #authError { color: #c0392b; font-size: 0.85rem; }
+    .empty-message { text-align: center; color: #b8a992; font-size: 0.9rem; padding: 20px; grid-column: 1 / -1; }
+
+    #searchBox { margin-bottom: 16px; }
+
+    #bookGrid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+      gap: 18px 14px;
+    }
+    .shelf-item { cursor: pointer; text-align: center; }
+    .book-cover {
+      width: 100%;
+      aspect-ratio: 2 / 3;
+      object-fit: cover;
+      border-radius: 4px 6px 6px 4px;
+      box-shadow: 3px 3px 8px rgba(80, 60, 30, 0.3), inset -4px 0 6px rgba(0,0,0,0.15);
+      background: linear-gradient(135deg, #e2a25a, #c97b3d);
       display: flex;
-      justify-content: space-between;
       align-items: center;
-    }    
+      justify-content: center;
+      color: white;
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 8px;
+      overflow: hidden;
+    }
+    .shelf-title {
+      margin-top: 6px;
+      font-size: 0.75rem;
+      color: #6b5a48;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .shelf-author {
+      font-size: 0.68rem;
+      color: #b8a992;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    #detailView, #pickerView { display: none; }
+    .back-button { margin-bottom: 16px; }
+    .detail-cover {
+      width: 160px;
+      aspect-ratio: 2 / 3;
+      object-fit: cover;
+      border-radius: 4px 6px 6px 4px;
+      box-shadow: 4px 4px 12px rgba(80, 60, 30, 0.35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      font-weight: 700;
+      color: white;
+      background: linear-gradient(135deg, #e2a25a, #c97b3d);
+      margin: 0 auto 20px;
+      padding: 12px;
+    }
+    .detail-title { font-size: 1.3rem; text-align: center; margin-bottom: 4px; }
+    .detail-author { font-size: 0.85rem; text-align: center; color: #a08c73; margin-bottom: 16px; }
+    .detail-memo { white-space: pre-wrap; line-height: 1.7; color: #4a3f35; font-size: 0.95rem; }
+
+    .picker-subtitle { text-align: center; color: #a08c73; font-size: 0.85rem; margin-bottom: 16px; }
+    #candidateGrid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+      gap: 14px;
+      max-width: 340px;
+      margin: 0 auto 20px;
+    }
+    .candidate-item { cursor: pointer; text-align: center; }
+    .candidate-cover {
+      width: 100%;
+      aspect-ratio: 2 / 3;
+      object-fit: cover;
+      border-radius: 4px 6px 6px 4px;
+      box-shadow: 2px 2px 6px rgba(80, 60, 30, 0.3);
+    }
+    .candidate-item.selected .candidate-cover {
+      box-shadow: 0 0 0 3px #e2824a, 2px 2px 6px rgba(80, 60, 30, 0.3);
+    }
+    .candidate-author {
+      font-size: 0.68rem;
+      color: #a08c73;
+      margin-top: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .picker-actions { text-align: center; }
   </style>
 </head>
 <body>
 
   <h1>📚 読書記録アプリ</h1>
+  <p class="subtitle">読んだ本の記録を、どの端末からでも</p>
 
-  <!-- ログイン画面 -->
-  <div id="authBox">
+  <div id="authBox" class="card">
     <label>メールアドレス</label>
     <input type="email" id="email" placeholder="例:you@example.com">
-
     <label>パスワード(6文字以上)</label>
     <input type="password" id="password" placeholder="パスワード">
-
     <button onclick="signup()">新規登録</button>
-    <button onclick="login()">ログイン</button>
-    <p id="authError" style="color:red;"></p>
+    <button class="secondary" onclick="login()">ログイン</button>
+    <p id="authError"></p>
   </div>
 
-  <!-- アプリ本体(ログイン後に表示) -->
   <div id="appBox">
     <div id="userInfo">
       <span id="userEmail"></span>
       <button onclick="logout()">ログアウト</button>
     </div>
 
-    <label>本のタイトル</label>
-    <input type="text" id="title" placeholder="例:吾輩は猫である">
+    <div class="card" id="addCard">
+      <label>本のタイトル</label>
+      <input type="text" id="title" placeholder="例:吾輩は猫である">
+      <label>感想</label>
+      <textarea id="memo" rows="4" placeholder="読んだ感想を書いてみましょう"></textarea>
+      <button id="addButton" onclick="addBook()">記録する</button>
+    </div>
 
-    <label>感想</label>
-    <textarea id="memo" rows="4" placeholder="読んだ感想を書いてみましょう"></textarea>
+    <div id="shelfView">
+      <h2>本棚</h2>
+      <input type="text" id="searchBox" placeholder="タイトルや著者で検索" oninput="renderShelf()">
+      <div id="bookGrid"></div>
+    </div>
 
-    <button onclick="addBook()">記録する</button>
+    <div id="pickerView">
+      <h2>表紙を選んでください</h2>
+      <p class="picker-subtitle" id="pickerSubtitle"></p>
+      <div id="candidateGrid"></div>
+      <div class="picker-actions">
+        <button class="secondary" onclick="registerWithoutCover()">表紙なしで登録する</button>
+        <button onclick="confirmCoverSelection()">この表紙で登録する</button>
+      </div>
+    </div>
 
-    <h2>これまでの記録</h2>
-    <div id="bookList"></div>
+    <div id="detailView">
+      <button class="secondary back-button" onclick="closeDetail()">← 本棚に戻る</button>
+      <div class="card">
+        <div id="detailCoverWrap"></div>
+        <div class="detail-title" id="detailTitle"></div>
+        <div class="detail-author" id="detailAuthor"></div>
+        <div class="detail-memo" id="detailMemo"></div>
+        <button class="danger" id="detailDeleteButton">削除する</button>
+      </div>
+    </div>
   </div>
 
-  <!-- Firebase SDK(compat版:scriptタグでそのまま使える形式) -->
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 
   <script>
-    // あなたのFirebase接続情報
     const firebaseConfig = {
       apiKey: "AIzaSyDEyFPaUegAoPHpAaB9z1bcbAf7fKQh8JU",
       authDomain: "reading-app-5527c.firebaseapp.com",
@@ -119,25 +229,26 @@
       appId: "1:778929617611:web:9d74f56b2e2244ea2b794e"
     };
 
+    const BOOKS_API_KEY = "AIzaSyALQaDbxoBEkh72niF2yUX_VjjExDkP4Lw";
+
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
 
     let unsubscribeBooks = null;
+    let booksCache = [];
+    let pendingBook = null;
+    let candidates = [];
+    let selectedCandidateIndex = 0;
 
-    // ログイン状態が変わったときに呼ばれる
     auth.onAuthStateChanged(user => {
-      const authError = document.getElementById('authError');
-      authError.textContent = '';
-
+      document.getElementById('authError').textContent = '';
       if (user) {
-        // ログイン済み
         document.getElementById('authBox').style.display = 'none';
         document.getElementById('appBox').style.display = 'block';
         document.getElementById('userEmail').textContent = user.email;
         watchBooks(user.uid);
       } else {
-        // 未ログイン
         document.getElementById('authBox').style.display = 'block';
         document.getElementById('appBox').style.display = 'none';
         if (unsubscribeBooks) unsubscribeBooks();
@@ -148,46 +259,135 @@
       const email = document.getElementById('email').value;
       const password = document.getElementById('password').value;
       auth.createUserWithEmailAndPassword(email, password)
-        .catch(err => {
-          document.getElementById('authError').textContent = err.message;
-        });
+        .catch(err => { document.getElementById('authError').textContent = err.message; });
     }
 
     function login() {
       const email = document.getElementById('email').value;
       const password = document.getElementById('password').value;
       auth.signInWithEmailAndPassword(email, password)
-        .catch(err => {
-          document.getElementById('authError').textContent = err.message;
-        });
+        .catch(err => { document.getElementById('authError').textContent = err.message; });
     }
 
     function logout() {
       auth.signOut();
     }
 
-    // Firestoreの変更をリアルタイムで監視して画面に反映
+    // Google Booksから表紙・タイトル・著者の候補を最大3件取得する
+    async function fetchCoverCandidates(title) {
+      try {
+        const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(title)}&maxResults=10&key=${BOOKS_API_KEY}`);
+        const data = await res.json();
+        const results = [];
+        const seenUrls = new Set();
+        if (data.items) {
+          for (const item of data.items) {
+            const info = item.volumeInfo;
+            const thumb = info.imageLinks && info.imageLinks.thumbnail;
+            if (thumb) {
+              const url = thumb.replace('http://', 'https://');
+              if (!seenUrls.has(url)) {
+                seenUrls.add(url);
+                results.push({
+                  url: url,
+                  title: info.title || title,
+                  author: (info.authors || []).join('、')
+                });
+              }
+            }
+            if (results.length >= 3) break;
+          }
+        }
+        return results;
+      } catch (e) {
+        console.error('表紙候補の取得に失敗しました', e);
+        return [];
+      }
+    }
+
     function watchBooks(uid) {
       const booksRef = db.collection('users').doc(uid).collection('books').orderBy('createdAt', 'desc');
       unsubscribeBooks = booksRef.onSnapshot(snapshot => {
-        const list = document.getElementById('bookList');
-        list.innerHTML = '';
-        snapshot.forEach(doc => {
-          const book = doc.data();
-          const item = document.createElement('div');
-          item.className = 'book-item';
-          item.innerHTML = `
-            <strong>${book.title}</strong>
-            <p>${book.memo}</p>
-            <button onclick="deleteBook('${doc.id}')">削除</button>
-          `;
-          list.appendChild(item);
-        });
+        booksCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        renderShelf();
       });
     }
 
-    function addBook() {
-      const user = auth.currentUser;
+    function renderShelf() {
+      const grid = document.getElementById('bookGrid');
+      const term = document.getElementById('searchBox').value.trim().toLowerCase();
+
+      const filtered = term === ''
+        ? booksCache
+        : booksCache.filter(book =>
+            book.title.toLowerCase().includes(term) ||
+            (book.author || '').toLowerCase().includes(term)
+          );
+
+      grid.innerHTML = '';
+
+      if (booksCache.length === 0) {
+        grid.innerHTML = '<p class="empty-message">まだ記録がありません。最初の1冊を記録してみましょう</p>';
+        return;
+      }
+
+      if (filtered.length === 0) {
+        grid.innerHTML = '<p class="empty-message">当てはまる本が見つかりませんでした</p>';
+        return;
+      }
+
+      filtered.forEach(book => {
+        const item = document.createElement('div');
+        item.className = 'shelf-item';
+        item.onclick = () => openDetail(book.id);
+
+        const coverHtml = book.coverUrl
+          ? `<img class="book-cover" src="${book.coverUrl}" alt="${book.title}">`
+          : `<div class="book-cover">${book.title}</div>`;
+
+        item.innerHTML = `
+          ${coverHtml}
+          <div class="shelf-title">${book.title}</div>
+          <div class="shelf-author">${book.author || ''}</div>
+        `;
+        grid.appendChild(item);
+      });
+    }
+
+    function openDetail(bookId) {
+      const book = booksCache.find(b => b.id === bookId);
+      if (!book) return;
+
+      const coverWrap = document.getElementById('detailCoverWrap');
+      coverWrap.innerHTML = book.coverUrl
+        ? `<img class="detail-cover" src="${book.coverUrl}" alt="${book.title}">`
+        : `<div class="detail-cover">${book.title}</div>`;
+
+      document.getElementById('detailTitle').textContent = book.title;
+      document.getElementById('detailAuthor').textContent = book.author || '';
+      document.getElementById('detailMemo').textContent = book.memo || '(感想はまだ書かれていません)';
+
+      const deleteButton = document.getElementById('detailDeleteButton');
+      deleteButton.onclick = () => {
+        if (confirm(`「${book.title}」を削除しますか?`)) {
+          deleteBook(book.id);
+          closeDetail();
+        }
+      };
+
+      document.getElementById('addCard').style.display = 'none';
+      document.getElementById('shelfView').style.display = 'none';
+      document.getElementById('detailView').style.display = 'block';
+      window.scrollTo(0, 0);
+    }
+
+    function closeDetail() {
+      document.getElementById('detailView').style.display = 'none';
+      document.getElementById('addCard').style.display = 'block';
+      document.getElementById('shelfView').style.display = 'block';
+    }
+
+    async function addBook() {
       const title = document.getElementById('title').value;
       const memo = document.getElementById('memo').value;
 
@@ -196,12 +396,80 @@
         return;
       }
 
-      db.collection('users').doc(user.uid).collection('books').add({
-        title: title,
-        memo: memo,
+      const addButton = document.getElementById('addButton');
+      addButton.disabled = true;
+      addButton.textContent = '表紙を検索中...';
+
+      pendingBook = { title, memo };
+      candidates = await fetchCoverCandidates(title);
+
+      addButton.disabled = false;
+      addButton.textContent = '記録する';
+
+      if (candidates.length === 0) {
+        await saveBook(pendingBook, '', '');
+        resetForm();
+      } else {
+        openPicker();
+      }
+    }
+
+    function openPicker() {
+      selectedCandidateIndex = 0;
+      document.getElementById('pickerSubtitle').textContent = `「${pendingBook.title}」で見つかった候補`;
+      renderCandidates();
+
+      document.getElementById('addCard').style.display = 'none';
+      document.getElementById('shelfView').style.display = 'none';
+      document.getElementById('pickerView').style.display = 'block';
+      window.scrollTo(0, 0);
+    }
+
+    function renderCandidates() {
+      const grid = document.getElementById('candidateGrid');
+      grid.innerHTML = '';
+      candidates.forEach((c, i) => {
+        const el = document.createElement('div');
+        el.className = 'candidate-item' + (i === selectedCandidateIndex ? ' selected' : '');
+        el.onclick = () => { selectedCandidateIndex = i; renderCandidates(); };
+        el.innerHTML = `
+          <img class="candidate-cover" src="${c.url}" alt="候補${i + 1}">
+          <div class="candidate-author">${c.author || ''}</div>
+        `;
+        grid.appendChild(el);
+      });
+    }
+
+    async function confirmCoverSelection() {
+      const c = candidates[selectedCandidateIndex];
+      await saveBook(pendingBook, c.url, c.author);
+      closePicker();
+    }
+
+    async function registerWithoutCover() {
+      await saveBook(pendingBook, '', '');
+      closePicker();
+    }
+
+    function closePicker() {
+      document.getElementById('pickerView').style.display = 'none';
+      document.getElementById('addCard').style.display = 'block';
+      document.getElementById('shelfView').style.display = 'block';
+      resetForm();
+    }
+
+    async function saveBook(book, coverUrl, author) {
+      const user = auth.currentUser;
+      await db.collection('users').doc(user.uid).collection('books').add({
+        title: book.title,
+        memo: book.memo,
+        coverUrl: coverUrl,
+        author: author,
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       });
+    }
 
+    function resetForm() {
       document.getElementById('title').value = '';
       document.getElementById('memo').value = '';
     }
