@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>読書統計 | 読書記録アプリ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <h1>📊 読書統計</h1>
+  <p class="subtitle">これまでの読書のふりかえり</p>
+
+  <div id="userInfo">
+    <span id="userEmail"></span>
+    <button class="secondary" onclick="location.href='index.html'">← 本棚に戻る</button>
+  </div>
+
+  <div class="metric-grid">
+    <div class="metric-card">
+      <div class="metric-label">総冊数</div>
+      <div class="metric-value" id="statTotal">0</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">今月</div>
+      <div class="metric-value" id="statMonth">0</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">今年</div>
+      <div class="metric-value" id="statYear">0</div>
+    </div>
+  </div>
+
+  <h2>評価の内訳</h2>
+  <div id="ratingBars"></div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="firebase-config.js"></script>
+
+  <script>
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    auth.onAuthStateChanged(user => {
+      if (!user) {
+        location.href = 'index.html';
+        return;
+      }
+      document.getElementById('userEmail').textContent = user.email;
+      loadStats(user.uid);
+    });
+
+    function loadStats(uid) {
+      db.collection('users').doc(uid).collection('books').get().then(snapshot => {
+        const books = snapshot.docs.map(d => d.data());
+        renderStats(books);
+      });
+    }
+
+    function sameMonth(d1, d2) {
+      return d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth();
+    }
+
+    function renderStats(books) {
+      const now = new Date();
+      const total = books.length;
+      const thisMonth = books.filter(b => b.createdAt && sameMonth(b.createdAt.toDate(), now)).length;
+      const thisYear = books.filter(b => b.createdAt && b.createdAt.toDate().getFullYear() === now.getFullYear()).length;
+
+      document.getElementById('statTotal').textContent = total;
+      document.getElementById('statMonth').textContent = thisMonth;
+      document.getElementById('statYear').textContent = thisYear;
+
+      const counts = [0, 0, 0, 0, 0, 0];
+      books.forEach(b => {
+        const r = b.rating || 0;
+        if (r >= 1 && r <= 5) counts[r]++;
+      });
+      const max = Math.max(1, ...counts);
+
+      const ratingBars = document.getElementById('ratingBars');
+      ratingBars.innerHTML = '';
+      for (let r = 5; r >= 1; r--) {
+        const pct = Math.round((counts[r] / max) * 100);
+        const row = document.createElement('div');
+        row.className = 'rating-row';
+        row.innerHTML = `
+          <span class="rating-label">${'★'.repeat(r)}${'☆'.repeat(5 - r)}</span>
+          <div class="rating-bar-track"><div class="rating-bar-fill" style="width:${pct}%"></div></div>
+          <span class="rating-count">${counts[r]}冊</span>
+        `;
+        ratingBars.appendChild(row);
+      }
+    }
+  </script>
+</body>
+</html>

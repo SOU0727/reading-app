@@ -6,157 +6,7 @@
   <title>読書記録アプリ</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700&display=swap" rel="stylesheet">
-  <style>
-    * { box-sizing: border-box; }
-    body {
-      font-family: 'Zen Maru Gothic', sans-serif;
-      max-width: 600px;
-      margin: 0 auto;
-      padding: 24px 16px 60px;
-      background: linear-gradient(180deg, #fdf6ec 0%, #f5efe3 100%);
-      min-height: 100vh;
-      color: #4a3f35;
-    }
-    h1 { font-size: 1.6rem; text-align: center; margin-bottom: 4px; }
-    .subtitle { text-align: center; color: #a08c73; font-size: 0.85rem; margin-bottom: 24px; }
-    .card {
-      background: #ffffff;
-      border-radius: 16px;
-      padding: 20px;
-      margin-bottom: 20px;
-      box-shadow: 0 4px 14px rgba(150, 120, 80, 0.12);
-    }
-    label { display: block; margin-top: 12px; margin-bottom: 4px; font-weight: 700; font-size: 0.9rem; color: #6b5a48; }
-    input, textarea {
-      width: 100%;
-      padding: 12px;
-      font-size: 16px;
-      font-family: inherit;
-      border: 1px solid #e3d9c9;
-      border-radius: 10px;
-      background: #fffaf3;
-    }
-    input:focus, textarea:focus { outline: none; border-color: #e2a25a; }
-    button {
-      padding: 12px 20px;
-      cursor: pointer;
-      margin-right: 8px;
-      margin-top: 14px;
-      font-size: 15px;
-      font-family: inherit;
-      font-weight: 700;
-      border: none;
-      border-radius: 10px;
-      background: linear-gradient(135deg, #f0a860, #e2824a);
-      color: white;
-      box-shadow: 0 3px 8px rgba(226, 130, 74, 0.35);
-    }
-    button:active { transform: translateY(1px); }
-    button:disabled { opacity: 0.6; cursor: default; }
-    button.secondary { background: #eee2d0; color: #6b5a48; box-shadow: none; }
-    button.danger { background: #f6e4e0; color: #b2543f; box-shadow: none; }
-    #authBox, #appBox { display: none; }
-    #userInfo {
-      display: flex; justify-content: space-between; align-items: center;
-      margin-bottom: 16px; padding: 10px 16px;
-      background: #fff3e2; border-radius: 12px; font-size: 0.85rem; color: #8a7458;
-    }
-    #userInfo button { margin: 0; padding: 6px 14px; font-size: 13px; }
-    h2 { font-size: 1.1rem; margin: 24px 0 12px; color: #6b5a48; }
-    #authError { color: #c0392b; font-size: 0.85rem; }
-    .empty-message { text-align: center; color: #b8a992; font-size: 0.9rem; padding: 20px; grid-column: 1 / -1; }
-
-    #searchBox { margin-bottom: 16px; }
-
-    #bookGrid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
-      gap: 18px 14px;
-    }
-    .shelf-item { cursor: pointer; text-align: center; }
-    .book-cover {
-      width: 100%;
-      aspect-ratio: 2 / 3;
-      object-fit: cover;
-      border-radius: 4px 6px 6px 4px;
-      box-shadow: 3px 3px 8px rgba(80, 60, 30, 0.3), inset -4px 0 6px rgba(0,0,0,0.15);
-      background: linear-gradient(135deg, #e2a25a, #c97b3d);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-size: 0.7rem;
-      font-weight: 700;
-      padding: 8px;
-      overflow: hidden;
-    }
-    .shelf-title {
-      margin-top: 6px;
-      font-size: 0.75rem;
-      color: #6b5a48;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .shelf-author {
-      font-size: 0.68rem;
-      color: #b8a992;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    #detailView, #pickerView { display: none; }
-    .back-button { margin-bottom: 16px; }
-    .detail-cover {
-      width: 160px;
-      aspect-ratio: 2 / 3;
-      object-fit: cover;
-      border-radius: 4px 6px 6px 4px;
-      box-shadow: 4px 4px 12px rgba(80, 60, 30, 0.35);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      font-weight: 700;
-      color: white;
-      background: linear-gradient(135deg, #e2a25a, #c97b3d);
-      margin: 0 auto 20px;
-      padding: 12px;
-    }
-    .detail-title { font-size: 1.3rem; text-align: center; margin-bottom: 4px; }
-    .detail-author { font-size: 0.85rem; text-align: center; color: #a08c73; margin-bottom: 16px; }
-    .detail-memo { white-space: pre-wrap; line-height: 1.7; color: #4a3f35; font-size: 0.95rem; }
-
-    .picker-subtitle { text-align: center; color: #a08c73; font-size: 0.85rem; margin-bottom: 16px; }
-    #candidateGrid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
-      gap: 14px;
-      max-width: 340px;
-      margin: 0 auto 20px;
-    }
-    .candidate-item { cursor: pointer; text-align: center; }
-    .candidate-cover {
-      width: 100%;
-      aspect-ratio: 2 / 3;
-      object-fit: cover;
-      border-radius: 4px 6px 6px 4px;
-      box-shadow: 2px 2px 6px rgba(80, 60, 30, 0.3);
-    }
-    .candidate-item.selected .candidate-cover {
-      box-shadow: 0 0 0 3px #e2824a, 2px 2px 6px rgba(80, 60, 30, 0.3);
-    }
-    .candidate-author {
-      font-size: 0.68rem;
-      color: #a08c73;
-      margin-top: 4px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .picker-actions { text-align: center; }
-  </style>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
@@ -176,12 +26,17 @@
   <div id="appBox">
     <div id="userInfo">
       <span id="userEmail"></span>
-      <button onclick="logout()">ログアウト</button>
+      <div>
+        <button class="secondary" onclick="location.href='stats.html'">📊 統計</button>
+        <button onclick="logout()">ログアウト</button>
+      </div>
     </div>
 
     <div class="card" id="addCard">
       <label>本のタイトル</label>
       <input type="text" id="title" placeholder="例:吾輩は猫である">
+      <label>評価</label>
+      <div id="newRatingStars" class="star-row"></div>
       <label>感想</label>
       <textarea id="memo" rows="4" placeholder="読んだ感想を書いてみましょう"></textarea>
       <button id="addButton" onclick="addBook()">記録する</button>
@@ -207,10 +62,26 @@
       <button class="secondary back-button" onclick="closeDetail()">← 本棚に戻る</button>
       <div class="card">
         <div id="detailCoverWrap"></div>
-        <div class="detail-title" id="detailTitle"></div>
-        <div class="detail-author" id="detailAuthor"></div>
-        <div class="detail-memo" id="detailMemo"></div>
-        <button class="danger" id="detailDeleteButton">削除する</button>
+
+        <div id="detailDisplay">
+          <div class="detail-title" id="detailTitle"></div>
+          <div class="detail-author" id="detailAuthor"></div>
+          <div class="detail-rating" id="detailRatingDisplay"></div>
+          <div class="detail-memo" id="detailMemo"></div>
+          <button onclick="startEdit()">編集する</button>
+          <button class="danger" id="detailDeleteButton">削除する</button>
+        </div>
+
+        <div id="detailEdit">
+          <label>本のタイトル</label>
+          <input type="text" id="editTitle">
+          <label>評価</label>
+          <div id="editRatingStars" class="star-row"></div>
+          <label>感想</label>
+          <textarea id="editMemo" rows="4"></textarea>
+          <button onclick="saveEdit()">保存する</button>
+          <button class="secondary" onclick="cancelEdit()">キャンセル</button>
+        </div>
       </div>
     </div>
   </div>
@@ -218,19 +89,9 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="firebase-config.js"></script>
 
   <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyDEyFPaUegAoPHpAaB9z1bcbAf7fKQh8JU",
-      authDomain: "reading-app-5527c.firebaseapp.com",
-      projectId: "reading-app-5527c",
-      storageBucket: "reading-app-5527c.firebasestorage.app",
-      messagingSenderId: "778929617611",
-      appId: "1:778929617611:web:9d74f56b2e2244ea2b794e"
-    };
-
-    const BOOKS_API_KEY = "AIzaSyALQaDbxoBEkh72niF2yUX_VjjExDkP4Lw";
-
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
@@ -240,6 +101,34 @@
     let pendingBook = null;
     let candidates = [];
     let selectedCandidateIndex = 0;
+    let newRating = 0;
+    let editRating = 0;
+    let currentDetailId = null;
+
+    function starsHtml(rating, interactive, handlerName) {
+      let html = '';
+      for (let i = 1; i <= 5; i++) {
+        const filled = i <= rating;
+        const cls = 'star' + (filled ? ' filled' : '') + (interactive ? ' interactive' : '');
+        const label = filled ? '★' : '☆';
+        html += interactive
+          ? `<span class="${cls}" onclick="${handlerName}(${i})">${label}</span>`
+          : `<span class="${cls}">${label}</span>`;
+      }
+      return html;
+    }
+
+    function renderNewRatingStars() {
+      document.getElementById('newRatingStars').innerHTML = starsHtml(newRating, true, 'setNewRating');
+    }
+    function setNewRating(n) { newRating = n; renderNewRatingStars(); }
+
+    function renderEditRatingStars() {
+      document.getElementById('editRatingStars').innerHTML = starsHtml(editRating, true, 'setEditRating');
+    }
+    function setEditRating(n) { editRating = n; renderEditRatingStars(); }
+
+    renderNewRatingStars();
 
     auth.onAuthStateChanged(user => {
       document.getElementById('authError').textContent = '';
@@ -273,7 +162,6 @@
       auth.signOut();
     }
 
-    // Google Booksから表紙・タイトル・著者の候補を最大3件取得する
     async function fetchCoverCandidates(title) {
       try {
         const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(title)}&maxResults=10&key=${BOOKS_API_KEY}`);
@@ -288,11 +176,7 @@
               const url = thumb.replace('http://', 'https://');
               if (!seenUrls.has(url)) {
                 seenUrls.add(url);
-                results.push({
-                  url: url,
-                  title: info.title || title,
-                  author: (info.authors || []).join('、')
-                });
+                results.push({ url, title: info.title || title, author: (info.authors || []).join('、') });
               }
             }
             if (results.length >= 3) break;
@@ -330,7 +214,6 @@
         grid.innerHTML = '<p class="empty-message">まだ記録がありません。最初の1冊を記録してみましょう</p>';
         return;
       }
-
       if (filtered.length === 0) {
         grid.innerHTML = '<p class="empty-message">当てはまる本が見つかりませんでした</p>';
         return;
@@ -349,6 +232,7 @@
           ${coverHtml}
           <div class="shelf-title">${book.title}</div>
           <div class="shelf-author">${book.author || ''}</div>
+          <div class="shelf-rating">${starsHtml(book.rating || 0, false)}</div>
         `;
         grid.appendChild(item);
       });
@@ -357,6 +241,7 @@
     function openDetail(bookId) {
       const book = booksCache.find(b => b.id === bookId);
       if (!book) return;
+      currentDetailId = bookId;
 
       const coverWrap = document.getElementById('detailCoverWrap');
       coverWrap.innerHTML = book.coverUrl
@@ -365,7 +250,11 @@
 
       document.getElementById('detailTitle').textContent = book.title;
       document.getElementById('detailAuthor').textContent = book.author || '';
+      document.getElementById('detailRatingDisplay').innerHTML = starsHtml(book.rating || 0, false);
       document.getElementById('detailMemo').textContent = book.memo || '(感想はまだ書かれていません)';
+
+      document.getElementById('detailEdit').style.display = 'none';
+      document.getElementById('detailDisplay').style.display = 'block';
 
       const deleteButton = document.getElementById('detailDeleteButton');
       deleteButton.onclick = () => {
@@ -387,6 +276,42 @@
       document.getElementById('shelfView').style.display = 'block';
     }
 
+    function startEdit() {
+      const book = booksCache.find(b => b.id === currentDetailId);
+      document.getElementById('editTitle').value = book.title;
+      document.getElementById('editMemo').value = book.memo;
+      editRating = book.rating || 0;
+      renderEditRatingStars();
+      document.getElementById('detailDisplay').style.display = 'none';
+      document.getElementById('detailEdit').style.display = 'block';
+    }
+
+    function cancelEdit() {
+      document.getElementById('detailEdit').style.display = 'none';
+      document.getElementById('detailDisplay').style.display = 'block';
+    }
+
+    async function saveEdit() {
+      const title = document.getElementById('editTitle').value;
+      const memo = document.getElementById('editMemo').value;
+      if (title === '') {
+        alert('タイトルを入力してください');
+        return;
+      }
+      await db.collection('users').doc(auth.currentUser.uid).collection('books').doc(currentDetailId).update({
+        title: title,
+        memo: memo,
+        rating: editRating
+      });
+
+      document.getElementById('detailTitle').textContent = title;
+      document.getElementById('detailRatingDisplay').innerHTML = starsHtml(editRating, false);
+      document.getElementById('detailMemo').textContent = memo || '(感想はまだ書かれていません)';
+
+      document.getElementById('detailEdit').style.display = 'none';
+      document.getElementById('detailDisplay').style.display = 'block';
+    }
+
     async function addBook() {
       const title = document.getElementById('title').value;
       const memo = document.getElementById('memo').value;
@@ -400,7 +325,7 @@
       addButton.disabled = true;
       addButton.textContent = '表紙を検索中...';
 
-      pendingBook = { title, memo };
+      pendingBook = { title, memo, rating: newRating };
       candidates = await fetchCoverCandidates(title);
 
       addButton.disabled = false;
@@ -463,6 +388,7 @@
       await db.collection('users').doc(user.uid).collection('books').add({
         title: book.title,
         memo: book.memo,
+        rating: book.rating || 0,
         coverUrl: coverUrl,
         author: author,
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -472,6 +398,8 @@
     function resetForm() {
       document.getElementById('title').value = '';
       document.getElementById('memo').value = '';
+      newRating = 0;
+      renderNewRatingStars();
     }
 
     function deleteBook(bookId) {
