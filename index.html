@@ -2,24 +2,47 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>読書記録アプリ</title>
   <style>
     body {
       font-family: sans-serif;
       max-width: 500px;
-      margin: 40px auto;
-      padding: 0 20px;
+      margin: 0 auto;
+      padding: 16px;
+      font-size: 16px;
+    }
+    h1 {
+      font-size: 1.5rem;
+    }
+    label {
+      display: block;
+      margin-top: 12px;
+      font-weight: bold;
     }
     input, textarea {
       width: 100%;
-      padding: 8px;
-      margin-bottom: 12px;
+      padding: 12px;
+      margin-top: 6px;
+      margin-bottom: 6px;
       box-sizing: border-box;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
     }
     button {
-      padding: 8px 16px;
+      padding: 12px 20px;
       cursor: pointer;
       margin-right: 8px;
+      margin-top: 8px;
+      font-size: 16px;
+      border: none;
+      border-radius: 6px;
+      background-color: #4a7dff;
+      color: white;
+    }
+    button:active {
+      background-color: #3a63d6;
     }
     .book-item {
       border: 1px solid #ccc;
@@ -27,13 +50,21 @@
       padding: 12px;
       margin-bottom: 10px;
     }
+    .book-item button {
+      background-color: #e05555;
+      padding: 8px 14px;
+      font-size: 14px;
+    }
     #authBox, #appBox {
       display: none;
     }
     #userInfo {
       margin-bottom: 20px;
       color: #555;
-    }
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }    
   </style>
 </head>
 <body>
